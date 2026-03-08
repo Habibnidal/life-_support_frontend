@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Emotional AI Assistant</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    .main-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+      justify-content: center;
+      min-height: calc(100vh - 40px);
+    }
+
+    .container {
+      background: #1e1e2f;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #2a2a4a;
+      flex-shrink: 0;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+    }
+
+    h2 { color: #e2e8f0; font-size: 28px; margin-bottom: 24px; text-align: center; font-weight: 600; }
+
+    .section-label {
+      color: #8892b0;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .language-selection {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .language-selection .cat-lang {
+      flex: 1;
+      text-align: center;
+      padding: 14px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #151525;
+      border: 2px solid transparent;
+      position: relative;
+    }
+
+    .language-selection .cat-lang input[type="radio"] {
+      display: none;
+    }
+
+    .language-selection .cat-lang:has(input:checked) {
+      background: rgba(102,126,234,0.15);
+      border-color: #667eea;
+    }
+
+    .language-selection .cat-lang:has(input:checked) .category-text {
+      color: #a0aef8;
+      font-weight: 700;
+    }
+
+    .textarea-wrapper {
+      position: relative;
+      margin-bottom: 24px;
+    }
+
+    .transliteration-hint {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: rgba(102,126,234,0.2);
+      color: #a0aef8;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 1;
+    }
+
+    .transliteration-hint.visible { opacity: 1; }
+
+    textarea {
+      width: 100%;
+      padding: 16px;
+      border: 2px solid #2a2a4a;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: inherit;
+      resize: vertical;
+      transition: all 0.3s ease;
+      background: #151525;
+      color: #e2e8f0;
+    }
+
+    textarea::placeholder { color: #555; }
+
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+    }
+
+    textarea.malayalam-mode {
+      font-size: 16px;
+      line-height: 1.8;
+      border-color: rgba(240,147,251,0.4);
+    }
+
+    textarea.malayalam-mode:focus {
+      border-color: #f093fb;
+      box-shadow: 0 0 0 3px rgba(240,147,251,0.15);
+    }
+
+    .category-label {
+      display: block;
+      padding: 12px 16px 12px 44px;
+      margin-bottom: 8px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #151525;
+      border: 2px solid transparent;
+      position: relative;
+    }
+
+    .category-label:hover { background: #1a1a35; transform: translateX(4px); }
+
+    .category-label input[type="radio"] {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #667eea;
+    }
+
+    .category-label:has(input:checked) { background: rgba(102,126,234,0.1); border-color: #667eea; }
+    .category-label input:checked + .category-text { color: #667eea; font-weight: 600; }
+
+    .category-text { color: #8892b0; font-size: 15px; transition: all 0.2s ease; }
+
+    .categories { margin-bottom: 20px; }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(102,126,234,0.35);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    button:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(102,126,234,0.5); }
+    button:active { transform: translateY(0); }
+
+    .loading { display: none; text-align: center; margin-top: 20px; }
+    .loading.show { display: block; }
+
+    .loading-dots span {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #667eea;
+      margin: 0 3px;
+      animation: bounce 1.4s ease-in-out infinite;
+    }
+
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%,60%,100% { transform: translateY(0); }
+      30% { transform: translateY(-10px); }
+    }
+
+    /* ============================================
+       CHARACTER PANEL
+    ============================================ */
+    .character-container {
+      width: 360px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.6s cubic-bezier(0.68,-0.55,0.265,1.55);
+      pointer-events: none;
+    }
+
+    .character-container.show {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
+    .speech-bubble {
+      background: #1e1e2f;
+      padding: 20px 24px;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      border: 1px solid #2a2a4a;
+      margin-bottom: 28px;
+      width: 100%;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.4s ease;
+    }
+
+    .speech-bubble.show { opacity: 1; transform: translateY(0); }
+
+    .speech-bubble-text {
+      color: #e2e8f0;
+      font-size: 15px;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    /* ============================================
+       CSS 3D ROBOT
+    ============================================ */
+    .robot-scene {
+      perspective: 700px;
+      width: 240px;
+      height: 330px;
+      position: relative;
+    }
+
+    .robot {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      animation: robotFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes robotFloat {
+      0%,100% { transform: translateY(0) rotateY(-8deg); }
+      50% { transform: translateY(-14px) rotateY(8deg); }
+    }
+
+    /* HEAD */
+    .robot-head {
+      position: absolute;
+      width: 116px;
+      height: 94px;
+      left: 50%;
+      top: 0;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse at 32% 28%, #ffffff 0%, #e0ecf8 55%, #bacce0 100%);
+      border-radius: 50% 50% 46% 46%;
+      box-shadow:
+        5px 10px 24px rgba(0,0,0,0.22),
+        inset -6px -6px 14px rgba(0,0,0,0.07),
+        inset 5px 5px 10px rgba(255,255,255,0.9);
+    }
+
+    /* ANTENNA */
+    .robot-antenna {
+      position: absolute;
+      width: 7px;
+      height: 24px;
+      background: linear-gradient(to bottom, #b8cce0, #ddeaf5);
+      left: 50%;
+      top: -24px;
+      transform: translateX(-50%);
+      border-radius: 3px 3px 0 0;
+    }
+
+    .robot-antenna::after {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: radial-gradient(circle at 35% 30%, #88eeff, #00aaff);
+      border-radius: 50%;
+      top: -8px;
+      left: -4px;
+      box-shadow: 0 0 10px #00d4ff, 0 0 22px rgba(0,200,255,0.55);
+      animation: antennaIdle 2s ease-in-out infinite;
+    }
+
+    @keyframes antennaIdle {
+      0%,100% { box-shadow: 0 0 8px #00d4ff, 0 0 18px rgba(0,200,255,0.5); }
+      50% { box-shadow: 0 0 14px #00d4ff, 0 0 28px rgba(0,200,255,0.75); }
+    }
+
+    /* EYES */
+    .robot-eyes {
+      position: absolute;
+      top: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 18px;
+    }
+
+    .robot-eye {
+      width: 28px;
+      height: 24px;
+      background: radial-gradient(circle at 35% 30%, #88eeff 0%, #00aaff 55%, #0066cc 100%);
+      border-radius: 50%;
+      position: relative;
+      box-shadow: 0 0 12px #00d4ff, 0 0 24px rgba(0,200,255,0.6), inset 0 2px 5px rgba(255,255,255,0.4);
+      animation: eyeBlink 4s ease-in-out infinite;
+    }
+
+    .robot-eye::after {
+      content: '';
+      position: absolute;
+      width: 9px;
+      height: 9px;
+      background: white;
+      border-radius: 50%;
+      top: 4px;
+      left: 5px;
+      opacity: 0.85;
+    }
+
+    @keyframes eyeBlink {
+      0%,88%,100% { transform: scaleY(1); }
+      93% { transform: scaleY(0.08); }
+    }
+
+    /* CHEEKS */
+    .robot-cheek {
+      position: absolute;
+      width: 16px;
+      height: 9px;
+      background: rgba(255,140,180,0.38);
+      border-radius: 50%;
+      top: 56px;
+    }
+
+    .robot-cheek.left { left: 10px; }
+    .robot-cheek.right { right: 10px; }
+
+    /* SMILE */
+    .robot-smile {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 38px;
+      height: 16px;
+      border: 3.5px solid #90b8d8;
+      border-top: none;
+      border-radius: 0 0 22px 22px;
+      transition: height 0.15s, border-color 0.15s;
+    }
+
+    /* NECK */
+    .robot-neck {
+      position: absolute;
+      width: 30px;
+      height: 15px;
+      background: linear-gradient(to bottom, #ccd8e8, #b8ccde);
+      left: 50%;
+      top: 92px;
+      transform: translateX(-50%);
+      border-radius: 4px;
+      box-shadow: inset -2px 0 5px rgba(0,0,0,0.1);
+    }
+
+    /* BODY */
+    .robot-body {
+      position: absolute;
+      width: 136px;
+      height: 114px;
+      left: 50%;
+      top: 105px;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse at 30% 22%, #ffffff 0%, #dde8f5 52%, #b8ccde 100%);
+      border-radius: 42% 42% 52% 52% / 32% 32% 52% 52%;
+      box-shadow:
+        5px 12px 28px rgba(0,0,0,0.18),
+        inset -8px -8px 18px rgba(0,0,0,0.06),
+        inset 6px 6px 14px rgba(255,255,255,0.8);
+    }
+
+    /* CHEST PANEL */
+    .robot-chest-panel {
+      position: absolute;
+      width: 54px;
+      height: 38px;
+      background: linear-gradient(140deg, #1a1a2e, #0a1830);
+      border-radius: 11px;
+      left: 50%;
+      top: 20px;
+      transform: translateX(-50%);
+      border: 1.5px solid rgba(102,126,234,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .chest-light {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      animation: chestIdle 2s ease-in-out infinite;
+    }
+
+    .chest-light:nth-child(1) { background: #00ffaa; animation-delay: 0s; }
+    .chest-light:nth-child(2) { background: #667eea; animation-delay: 0.33s; }
+    .chest-light:nth-child(3) { background: #f093fb; animation-delay: 0.66s; }
+
+    @keyframes chestIdle {
+      0%,100% { opacity: 0.35; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.1); box-shadow: 0 0 7px currentColor; }
+    }
+
+    /* ARMS */
+    .robot-arm {
+      position: absolute;
+      width: 33px;
+      height: 84px;
+      top: 108px;
+      background: radial-gradient(ellipse at 32% 22%, #f2f7ff 0%, #cdd8ea 62%, #aabcce 100%);
+      border-radius: 40%;
+      box-shadow: 3px 7px 16px rgba(0,0,0,0.18), inset -3px -3px 7px rgba(0,0,0,0.07);
+    }
+
+    .robot-arm.left {
+      left: 20px;
+      transform-origin: top center;
+      animation: armL 3s ease-in-out infinite;
+    }
+
+    .robot-arm.right {
+      right: 20px;
+      transform-origin: top center;
+      animation: armR 3s ease-in-out infinite;
+    }
+
+    @keyframes armL {
+      0%,100% { transform: rotate(-8deg); }
+      50% { transform: rotate(8deg); }
+    }
+
+    @keyframes armR {
+      0%,100% { transform: rotate(8deg); }
+      50% { transform: rotate(-8deg); }
+    }
+
+    /* SHADOW */
+    .robot-shadow {
+      position: absolute;
+      width: 110px;
+      height: 22px;
+      background: radial-gradient(ellipse, rgba(0,0,0,0.3) 0%, transparent 72%);
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      animation: shadowAnim 3s ease-in-out infinite;
+    }
+
+    @keyframes shadowAnim {
+      0%,100% { transform: translateX(-50%) scaleX(1); opacity: 0.3; }
+      50% { transform: translateX(-50%) scaleX(0.65); opacity: 0.16; }
+    }
+
+    /* ============================================
+       SPEAKING STATE
+    ============================================ */
+    .robot.speaking {
+      animation: robotTalk 0.55s ease-in-out infinite;
+    }
+
+    @keyframes robotTalk {
+      0%,100% { transform: translateY(0) rotateY(-5deg); }
+      50% { transform: translateY(-7px) rotateY(5deg); }
+    }
+
+    .robot.speaking .robot-eye {
+      animation: eyeGlow 0.45s ease-in-out infinite alternate, eyeBlink 4s ease-in-out infinite;
+    }
+
+    @keyframes eyeGlow {
+      0% { box-shadow: 0 0 10px #00d4ff, 0 0 22px rgba(0,200,255,0.55); }
+      100% { box-shadow: 0 0 20px #00d4ff, 0 0 40px rgba(0,200,255,0.9), 0 0 56px rgba(0,200,255,0.35); }
+    }
+
+    .robot.speaking .robot-antenna::after {
+      animation: antennaSpeak 0.35s ease-in-out infinite alternate;
+    }
+
+    @keyframes antennaSpeak {
+      0% { transform: scale(1); box-shadow: 0 0 8px #00d4ff, 0 0 18px rgba(0,200,255,0.5); }
+      100% { transform: scale(1.4); box-shadow: 0 0 18px #00d4ff, 0 0 36px rgba(0,200,255,1); }
+    }
+
+    .robot.speaking .robot-smile {
+      animation: mouthTalk 0.28s ease-in-out infinite alternate;
+    }
+
+    @keyframes mouthTalk {
+      0% { height: 10px; border-color: #90b8d8; }
+      100% { height: 22px; border-color: #00aaff; }
+    }
+
+    .robot.speaking .chest-light {
+      animation: chestSpeak 0.35s ease-in-out infinite alternate;
+    }
+
+    @keyframes chestSpeak {
+      0% { opacity: 0.5; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1.25); box-shadow: 0 0 10px currentColor; }
+    }
+
+    /* ============================================
+       LOADING / THINKING STATE
+    ============================================ */
+    .robot.thinking {
+      animation: robotThink 1.2s ease-in-out infinite;
+    }
+
+    @keyframes robotThink {
+      0%,100% { transform: translateY(0) rotateY(-12deg); }
+      50% { transform: translateY(-10px) rotateY(12deg); }
+    }
+
+    .robot.thinking .robot-eye {
+      animation: eyeThink 1s ease-in-out infinite;
+    }
+
+    @keyframes eyeThink {
+      0%,100% { background: radial-gradient(circle at 35% 30%, #ffee88 0%, #ffaa00 55%, #cc6600 100%); box-shadow: 0 0 10px #ffaa00, 0 0 22px rgba(255,170,0,0.5); }
+      50% { background: radial-gradient(circle at 35% 30%, #88eeff 0%, #00aaff 55%, #0066cc 100%); box-shadow: 0 0 10px #00d4ff, 0 0 22px rgba(0,200,255,0.5); }
+    }
+
+    .robot.thinking .robot-antenna::after {
+      animation: antennaThink 0.7s ease-in-out infinite alternate;
+    }
+
+    @keyframes antennaThink {
+      0% { background: radial-gradient(circle at 35% 30%, #ffee88, #ffaa00); transform: scale(1); }
+      100% { background: radial-gradient(circle at 35% 30%, #88eeff, #00aaff); transform: scale(1.3); }
+    }
+
+    /* NAME TAG */
+    .bot-name-tag {
+      font-size: 20px;
+      font-weight: 700;
+      color: #e2e8f0;
+      letter-spacing: 2px;
+      text-align: center;
+      margin-top: 16px;
+      padding: 7px 22px;
+      background: #151525;
+      border: 2px solid rgba(102,126,234,0.5);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bot-name-tag::before {
+      content: "";
+      position: absolute;
+      top: 0; left: -100%;
+      width: 200%; height: 100%;
+      background: linear-gradient(120deg, transparent 0%, rgba(102,126,234,0.2) 30%, rgba(102,126,234,0.85) 50%, rgba(102,126,234,0.2) 70%, transparent 100%);
+      transform: skewX(-20deg);
+    }
+
+    .bot-name-tag.active::before {
+      animation: nameGlow 2s linear infinite;
+    }
+
+    @keyframes nameGlow {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      body { padding: 10px; }
+      .main-wrapper { flex-direction: column; gap: 20px; align-items: center; }
+      .container { padding: 24px; max-width: 100%; }
+      h2 { font-size: 24px; }
+      .character-container { position: relative; top: 0; width: 100%; max-width: 360px; margin: 20px auto 0; }
+    }
+
+    @media (max-width: 500px) {
+      .container { padding: 20px; }
+      h2 { font-size: 22px; }
+      textarea { font-size: 14px; padding: 14px; }
+      .category-text { font-size: 14px; }
+      button { padding: 14px; font-size: 15px; }
+      .robot-scene { width: 190px; height: 280px; }
+      .robot-head { width: 96px; height: 78px; }
+      .robot-body { width: 112px; height: 92px; top: 90px; }
+      .robot-arm { width: 27px; height: 68px; top: 94px; }
+      .robot-arm.left { left: 16px; }
+      .robot-arm.right { right: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+  <div class="container">
+    <h2>✨ Veloria</h2>
+
+    <!-- LANGUAGE SELECTION FIRST -->
+    <span class="section-label">Select Language</span>
+    <div class="language-selection">
+      <label class="cat-lang">
+        <input type="radio" name="language" value="en" checked onchange="onLanguageChange()">
+        <span class="category-text">🇺🇸 English</span>
+      </label>
+      <label class="cat-lang">
+        <input type="radio" name="language" value="ml" onchange="onLanguageChange()">
+        <span class="category-text">🇮🇳 മലയാളം</span>
+      </label>
+    </div>
+
+    <!-- TEXTAREA -->
+    <div class="textarea-wrapper">
+      <span class="transliteration-hint" id="transHint">⌨️ Type in English → Malayalam</span>
+      <textarea id="text" rows="5" placeholder="Describe what you are feeling..."
+        oninput="handleTranslitInput(event)"
+        onkeydown="handleTranslitKeydown(event)"></textarea>
+    </div>
+
+    <div class="categories">
+      <label class="category-label">
+        <input type="radio" name="cat" value="current condition">
+        <span class="category-text">Current Condition</span>
+      </label>
+      <label class="category-label">
+        <input type="radio" name="cat" value="strength">
+        <span class="category-text">Strength</span>
+      </label>
+      <label class="category-label">
+        <input type="radio" name="cat" value="weakness">
+        <span class="category-text">Weakness</span>
+      </label>
+      <label class="category-label">
+        <input type="radio" name="cat" value="motivational advice">
+        <span class="category-text">Motivational Advice</span>
+      </label>
+      <label class="category-label">
+        <input type="radio" name="cat" value="what should i do now">
+        <span class="category-text">What should I do now</span>
+      </label>
+      <label class="category-label">
+        <input type="radio" name="cat" value="better living">
+        <span class="category-text">What to do for Better Living</span>
+      </label>
+    </div>
+
+    <button onclick="send()">Check</button>
+
+    <div class="loading" id="loading">
+      <div class="loading-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARACTER PANEL -->
+  <div class="character-container" id="characterContainer">
+    <div class="speech-bubble" id="speechBubble">
+      <div class="speech-bubble-text" id="speechText"></div>
+    </div>
+
+    <!-- CSS 3D ROBOT -->
+    <div class="robot-scene">
+      <div class="robot" id="cssRobot">
+        <div class="robot-head">
+          <div class="robot-antenna"></div>
+          <div class="robot-eyes">
+            <div class="robot-eye"></div>
+            <div class="robot-eye"></div>
+          </div>
+          <div class="robot-cheek left"></div>
+          <div class="robot-cheek right"></div>
+          <div class="robot-smile"></div>
+        </div>
+        <div class="robot-neck"></div>
+        <div class="robot-body">
+          <div class="robot-chest-panel">
+            <div class="chest-light"></div>
+            <div class="chest-light"></div>
+            <div class="chest-light"></div>
+          </div>
+        </div>
+        <div class="robot-arm left"></div>
+        <div class="robot-arm right"></div>
+        <div class="robot-shadow"></div>
+      </div>
+    </div>
+
+    <div class="bot-name-tag" id="botNameTag">Veloria</div>
+  </div>
+</div>
+
+<script>
+/* ============================================
+   MALAYALAM TRANSLITERATION
+============================================ */
+function transliterateWord(word) {
+  const consonants = [
+    ['ksh','ക്ഷ'],['nch','ഞ്ച'],['nth','ന്ത'],
+    ['ch','ച'],['sh','ശ'],['gh','ഘ'],['dh','ധ'],['bh','ഭ'],
+    ['ph','ഫ'],['th','ത'],['kh','ഖ'],['jh','ഝ'],['zh','ഴ'],
+    ['tr','ത്ര'],['gr','ഗ്ര'],['pr','പ്ര'],['br','ബ്ര'],['kr','ക്ര'],['dr','ദ്ര'],
+    ['nn','ണ'],['rr','ർ'],['ll','ൾ'],['tt','ട'],
+    ['k','ക'],['g','ഗ'],['c','ക'],['j','ജ'],['t','ത'],['d','ദ'],
+    ['n','ന'],['p','പ'],['b','ബ'],['m','മ'],['y','യ'],['r','ര'],
+    ['l','ല'],['L','ള'],['v','വ'],['w','വ'],['s','സ'],['h','ഹ'],['f','ഫ'],
+    ['N','ണ'],['R','ർ'],
+  ];
+  const matraMap = {
+    'aa':'ാ','A':'ാ','ii':'ീ','ee':'ീ','I':'ീ',
+    'uu':'ൂ','oo':'ൂ','U':'ൂ','ai':'ൈ','au':'ൌ',
+    'a':'','i':'ി','u':'ു','e':'െ','o':'ൊ',
+  };
+  const ivowels = [
+    ['aa','ആ'],['ii','ഈ'],['uu','ഊ'],['ee','ഈ'],['oo','ഓ'],['ai','ഐ'],['au','ഔ'],
+    ['a','അ'],['i','ഇ'],['u','ഉ'],['e','എ'],['o','ഒ'],
+  ];
+  const virama = '്';
+  const vowelKeys = ['aa','ii','uu','ee','oo','ai','au','a','i','u','e','o','A','I','U'];
+
+  function getCons(str) {
+    for (const [k,v] of consonants) {
+      if (str.toLowerCase().startsWith(k.toLowerCase()) && /^[^aeiou]/i.test(k)) return [k,v];
+    }
+    return null;
+  }
+  function getVowel(str) {
+    for (const k of vowelKeys) if (str.toLowerCase().startsWith(k.toLowerCase())) return [k,k.length];
+    return null;
+  }
+  function getIVowel(str) {
+    for (const [k,v] of ivowels) if (/^[aeiou]/i.test(k) && str.toLowerCase().startsWith(k.toLowerCase())) return [k,v];
+    return null;
+  }
+
+  let result='', i=0;
+  while(i < word.length) {
+    const cons = getCons(word.slice(i));
+    if (cons) {
+      result += cons[1]; i += cons[0].length;
+      const vow = getVowel(word.slice(i));
+      if (vow) { result += (matraMap[vow[0]] !== undefined ? matraMap[vow[0]] : ''); i += vow[1]; }
+      else if (getCons(word.slice(i))) { result += virama; }
+      continue;
+    }
+    const iv = getIVowel(word.slice(i));
+    if (iv) { result += iv[1]; i += iv[0].length; continue; }
+    result += word[i]; i++;
+  }
+  return result;
+}
+
+let isMalayalam = false, lastValue = '';
+
+function onLanguageChange() {
+  const lang = document.querySelector('input[name="language"]:checked').value;
+  isMalayalam = (lang === 'ml');
+  const ta = document.getElementById('text');
+  const hint = document.getElementById('transHint');
+  if (isMalayalam) {
+    ta.classList.add('malayalam-mode');
+    ta.placeholder = 'നിങ്ങളുടെ വികാരങ്ങൾ വിവരിക്കൂ... (Type in English)';
+    hint.classList.add('visible');
+    ta.focus();
+  } else {
+    ta.classList.remove('malayalam-mode');
+    ta.placeholder = 'Describe what you are feeling...';
+    hint.classList.remove('visible');
+  }
+}
+
+function handleTranslitInput(e) {
+  if (!isMalayalam) return;
+  const ta = e.target, cur = ta.value, pos = ta.selectionStart;
+  const justTyped = cur.slice(lastValue.length);
+  if (/[\s.,!?;:।\-]/.test(justTyped)) {
+    const before = cur.slice(0, pos - justTyped.length);
+    const match = before.match(/[a-zA-Z]+$/);
+    if (match) {
+      const wStart = before.length - match[0].length;
+      const conv = transliterateWord(match[0]);
+      ta.value = cur.slice(0, wStart) + conv + cur.slice(wStart + match[0].length);
+      const np = wStart + conv.length + justTyped.length;
+      ta.setSelectionRange(np, np);
+    }
+  }
+  lastValue = ta.value;
+}
+
+function handleTranslitKeydown(e) {
+  if (!isMalayalam || e.key !== 'Enter') return;
+  const ta = e.target, pos = ta.selectionStart;
+  const match = ta.value.slice(0, pos).match(/[a-zA-Z]+$/);
+  if (match) {
+    e.preventDefault();
+    const wStart = pos - match[0].length;
+    const conv = transliterateWord(match[0]);
+    ta.value = ta.value.slice(0, wStart) + conv + '\n' + ta.value.slice(pos);
+    const np = wStart + conv.length + 1;
+    ta.setSelectionRange(np, np);
+    lastValue = ta.value;
+  }
+}
+
+/* ============================================
+   ROBOT CONTROLLER
+============================================ */
+const robot = document.getElementById('cssRobot');
+const charContainer = document.getElementById('characterContainer');
+const botNameTag = document.getElementById('botNameTag');
+
+function setRobotState(state) {
+  robot.classList.remove('speaking','thinking');
+  botNameTag.classList.remove('active');
+  if (state === 'speaking') { robot.classList.add('speaking'); botNameTag.classList.add('active'); }
+  if (state === 'thinking') { robot.classList.add('thinking'); botNameTag.classList.add('active'); }
+}
+
+function showChar() { charContainer.classList.add('show'); }
+function hideChar() {
+  charContainer.classList.remove('show');
+  document.getElementById('speechBubble').classList.remove('show');
+  setRobotState('idle');
+}
+
+function scrollToChar() {
+  setTimeout(() => charContainer.scrollIntoView({ behavior:'smooth', block:'center' }), 300);
+}
+
+function speakText(text, language) {
+  window.speechSynthesis.cancel();
+  const msg = new SpeechSynthesisUtterance(text);
+  const voices = window.speechSynthesis.getVoices();
+  if (language === 'ml') {
+    msg.lang = 'ml-IN'; msg.rate = 0.85; msg.pitch = 1.15;
+    const v = voices.find(v => v.lang.includes('ml')) || voices.find(v => v.lang.includes('hi-IN')) || voices[0];
+    if (v) msg.voice = v;
+  } else {
+    msg.lang = 'en-US'; msg.pitch = 1.5; msg.rate = 1.0;
+    const v = voices.find(v => v.lang.includes('en') && (v.name.toLowerCase().includes('david') || v.name.toLowerCase().includes('alex')));
+    if (v) msg.voice = v;
+  }
+  msg.onstart = () => { setRobotState('speaking'); scrollToChar(); };
+  msg.onend = () => setRobotState('idle');
+  msg.onerror = () => setRobotState('idle');
+  try { window.speechSynthesis.speak(msg); } catch(e) { setRobotState('idle'); }
+}
+
+function send() {
+  const ta = document.getElementById('text');
+  if (isMalayalam) {
+    const m = ta.value.match(/[a-zA-Z]+$/);
+    if (m) { const s = ta.value.length - m[0].length; ta.value = ta.value.slice(0, s) + transliterateWord(m[0]); }
+  }
+  const text = ta.value;
+  const cat = document.querySelector('input[name="cat"]:checked');
+  const lang = document.querySelector('input[name="language"]:checked');
+  if (!text.trim()) { alert('Please describe your feelings'); return; }
+  if (!cat) { alert('Please select a category'); return; }
+  const language = lang ? lang.value : 'en';
+
+  document.getElementById('loading').classList.add('show');
+  showChar();
+  setRobotState('thinking');
+  document.getElementById('speechBubble').classList.remove('show');
+  scrollToChar();
+
+  fetch('https://emotionalai.onrender.com/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, category: cat.value, language })
+  })
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('speechText').textContent = data.response;
+    document.getElementById('speechBubble').classList.add('show');
+
+    if (data.audio) {
+      const audio = new Audio('data:audio/mp3;base64,' + data.audio);
+      audio.playbackRate = 1.3;
+      audio.preservesPitch = true;
+      audio.onplay = () => { setRobotState('speaking'); scrollToChar(); };
+      audio.onended = () => setRobotState('idle');
+      audio.onerror = () => setRobotState('idle');
+      audio.play().catch(() => speakText(data.response, language));
+    } else {
+      speakText(data.response, language);
+    }
+  })
+  .catch(err => {
+    document.getElementById('loading').classList.remove('show');
+    setRobotState('idle');
+    console.error(err);
+    alert('Error connecting to the server. Please try again.');
+  });
+}
+
+window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+</script>
+</body>
+</html>
+python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn module3.wsgi:application
