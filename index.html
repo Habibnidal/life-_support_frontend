@@ -1009,15 +1009,26 @@ function normalizeBase(base) {
   return (base || '').trim().replace(/\/+$/, '');
 }
 
+function isLocalHost(base) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(base || '');
+}
+
 const configuredApiBase = normalizeBase(window.VELORIA_CONFIG?.API_BASE);
+const savedApiBase = normalizeBase(localStorage.getItem('veloria_api_base'));
+const currentHost = (window.location.hostname || '').toLowerCase();
+const isFrontendLocal = currentHost === 'localhost' || currentHost === '127.0.0.1';
+const localFallbacks = isFrontendLocal ? ['http://127.0.0.1:8000', 'http://localhost:8000'] : [];
 
 const API_BASES = Array.from(new Set([
-  normalizeBase(localStorage.getItem('veloria_api_base')),
+  savedApiBase,
   configuredApiBase,
   normalizeBase(sameOrigin),
-  'http://127.0.0.1:8000',
-  'http://localhost:8000'
-].filter(Boolean)));
+  ...localFallbacks
+].filter(Boolean))).filter(base => {
+  // Never try localhost endpoints from non-local frontends (e.g., mobile/public URL).
+  if (!isFrontendLocal && isLocalHost(base)) return false;
+  return true;
+});
 
 async function postAnalyze(payload) {
   return postApi('/analyze', payload);
