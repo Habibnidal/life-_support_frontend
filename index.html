@@ -1005,16 +1005,16 @@ const sameOrigin = (window.location.origin && window.location.origin !== 'null')
   ? window.location.origin
   : null;
 
-const configuredApiBase = (window.VELORIA_CONFIG?.API_BASE || '').trim();
-const placeholderApiBase = 'https://web-production-d7b0.up.railway.app/';
-const productionApiBase = configuredApiBase && configuredApiBase !== placeholderApiBase
-  ? configuredApiBase
-  : null;
+function normalizeBase(base) {
+  return (base || '').trim().replace(/\/+$/, '');
+}
+
+const configuredApiBase = normalizeBase(window.VELORIA_CONFIG?.API_BASE);
 
 const API_BASES = Array.from(new Set([
-  localStorage.getItem('veloria_api_base'),
-  productionApiBase,
-  sameOrigin,
+  normalizeBase(localStorage.getItem('veloria_api_base')),
+  configuredApiBase,
+  normalizeBase(sameOrigin),
   'http://127.0.0.1:8000',
   'http://localhost:8000'
 ].filter(Boolean)));
